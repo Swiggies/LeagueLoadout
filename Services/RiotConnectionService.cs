@@ -9,7 +9,7 @@ using System.Net.Http;
 
 namespace LeagueLoadout
 {
-    class RiotConnectionService
+    public class RiotConnectionService
     {
         public RiotApi Riot;
 
@@ -20,9 +20,17 @@ namespace LeagueLoadout
 
         public async void RequestAuth()
         {
-            var client = new HttpClient();
+            try
+            {
+                var client = new HttpClient();
 
-            HttpResponseMessage response = await client.PostAsync("https://127.0.0.1:2999/swagger/v3/openapi.json");
+                HttpResponseMessage response = await client.GetAsync("https://127.0.0.1:2999/swagger/v3/openapi.json");
+                Debug.Print($"{response.StatusCode} // {response.Content}");
+            }
+            catch(HttpRequestException e)
+            {
+                Debug.Print(e.Message);
+            }
         }
     }
 }

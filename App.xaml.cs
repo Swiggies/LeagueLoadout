@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,31 +15,25 @@ namespace LeagueLoadout
     /// </summary>
     public partial class App : Application
     {
+        private readonly ServiceProvider _serviceProvider;
+
         public App()
         {
-
+            var serviceCollection = new ServiceCollection();
+            ConfigureServices(serviceCollection);
+            _serviceProvider = serviceCollection.BuildServiceProvider();
         }
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
-            using (var services = ConfigureServices())
-            {
-                var client = services.GetRequiredService<RiotConnectionService>();
-
-                client.Riot = RiotSharp.RiotApi.GetDevelopmentInstance("");
-            }
-
-            MainWindow window = new MainWindow();
-            window.Title = "League Loadout";
-            window.Show();
-            Console.WriteLine("Testing");
+            var mainWindow = _serviceProvider.GetService<MainWindow>();
+            mainWindow.Show();
         }
 
-        private ServiceProvider ConfigureServices()
+        private void ConfigureServices(IServiceCollection services)
         {
-            return new ServiceCollection()
-                .AddSingleton<RiotConnectionService>()
-                .BuildServiceProvider();
+            services.AddSingleton<RiotConnectionService>();
+            services.AddSingleton<MainWindow>();
         }
     }
 }

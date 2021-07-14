@@ -22,14 +22,17 @@ namespace LeagueLoadout
     /// </summary>
     public partial class MainWindow : Window
     {
-        public MainWindow()
+        RiotConnectionService RiotConnection { get; set; }
+
+        public MainWindow(RiotConnectionService riotConnectionService)
         {
             InitializeComponent();
+            RiotConnection = riotConnectionService;
         }
             
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
+            RiotConnection.RequestAuth();
         }
     }
 }
