@@ -25,7 +25,7 @@ namespace LeagueLoadout
             {
                 var client = services.GetRequiredService<RiotConnectionService>();
 
-                client.Riot = RiotSharp.RiotApi.GetDevelopmentInstance("***REMOVED***");
+                client.Riot = RiotSharp.RiotApi.GetDevelopmentInstance("");
             }
 
             MainWindow window = new MainWindow();
