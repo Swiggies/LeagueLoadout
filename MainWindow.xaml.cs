@@ -30,9 +30,9 @@ namespace LeagueLoadout
             RiotConnection = riotConnectionService;
         }
             
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            RiotConnection.RequestAuth();
+            await RiotConnection.RequestAuth();
         }
     }
 }
