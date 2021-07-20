@@ -7,8 +7,8 @@ using Newtonsoft.Json;
 
 namespace LeagueLoadout.Objects
 {
-    class Perks
+    class Loadout
     {
-
+        
     }
 }

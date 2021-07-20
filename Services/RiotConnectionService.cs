@@ -1,20 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
-using RiotSharp;
 using System.Diagnostics;
 using System.Net.Http;
-using System.Security.Authentication;
-using System.Net.Http.Headers;
 using System.Net.WebSockets;
 using System.Net;
-using Flurl.Http;
-using Flurl.Http.Configuration;
+using Websocket.Client;
+using System.Reactive.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Flurl.Http;
+using Flurl.Http.Configuration;
 
 namespace LeagueLoadout
 {
@@ -22,62 +19,66 @@ namespace LeagueLoadout
     {
         public EventHandler<LeagueEvent> MessageReceived { get; set; }
 
-        private readonly Dictionary<string, List<EventHandler<LeagueEvent>>> _subscribers;
-        private HttpClient _client;
-        private ClientWebSocket _socket;
-
+        public Dictionary<string, List<EventHandler<LeagueEvent>>> _subscribers;
+        private WebsocketClient _socket;
 
         public RiotConnectionService()
         {
             _subscribers = new Dictionary<string, List<EventHandler<LeagueEvent>>>();
+            RequestAuth();
         }
 
-        public async Task RequestAuth()
+        public async Task Connect()
         {
-            _client = new HttpClient(new HttpClientHandler()
-            {
-                SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls,
-                ServerCertificateCustomValidationCallback = (a, b, c, d) => true
-            });
+            await _socket.Start();
+            await _socket.SendInstant("[5, \"OnJsonApiEvent\"]");
+        }
 
-            var status = LeagueUtils.GetLeagueStatus();
-            if (status == null) return;
-
-            var byteArray = Encoding.ASCII.GetBytes("riot:" + status.Item2);
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-            _socket = new ClientWebSocket();
-            _socket.Options.Credentials = new NetworkCredential("riot", status.Item2);
-            _socket.Options.RemoteCertificateValidationCallback = (_,_,_,_) => true;
-            var msg = new ArraySegment<byte>(Encoding.ASCII.GetBytes("[5,\"OnJsonApiEvent\"]"));
-
+        public void RequestAuth()
+        {
             try
             {
-                await _socket.ConnectAsync(new Uri($"wss://127.0.0.1:{status.Item3}/"), CancellationToken.None);
-                await _socket.SendAsync(msg, WebSocketMessageType.Text, true, CancellationToken.None);
+                var status = LeagueUtils.GetLeagueStatus();
+                if (status == null) return;
 
-                var buffer = WebSocket.CreateClientBuffer(4096, 4096);
-                WebSocketReceiveResult response = await _socket.ReceiveAsync(buffer, CancellationToken.None);
-
-                while (response.MessageType != WebSocketMessageType.Close)
+                _socket = new WebsocketClient(new Uri($"wss://127.0.0.1:{status.Item3}/"), () =>
                 {
-                    string rawResponse = Encoding.ASCII.GetString(buffer);
-                    var eventArray = JArray.Parse(rawResponse);
-                    LeagueEvent leagueEvent = eventArray[2].ToObject<LeagueEvent>();
-
-                    MessageReceived?.Invoke(this, leagueEvent);
-                    Debug.WriteLine(leagueEvent.uri);
-                    if(!_subscribers.TryGetValue(leagueEvent.uri, out var eventHandlers))
+                    var socket = new ClientWebSocket
                     {
-                        return;
-                    }
+                        Options =
+                        {
+                            Credentials = new NetworkCredential("riot", status.Item2),
+                            RemoteCertificateValidationCallback = (_,_,_,_) => true
+                        }
+                    };
 
-                    eventHandlers.ForEach(eventHandler => eventHandler.Invoke(this, leagueEvent));
+                    socket.Options.AddSubProtocol("wamp");
+                    return socket;
+                });
 
-                    // Reset buffer
-                    buffer = WebSocket.CreateClientBuffer(4096, 4096);
-                    response = await _socket.ReceiveAsync(buffer, CancellationToken.None);
-                }
+                _socket.MessageReceived
+                    .Where(msg => msg.Text != null)
+                    .Where(msg => msg.Text.StartsWith('['))
+                    .Subscribe(msg =>
+                    {
+                        var eventArray = JArray.Parse(msg.Text);
+                        var eventNumer = eventArray[0].ToObject<int>();
+
+                        if (eventNumer != 8) return;
+
+                        var leagueEvent = eventArray[2].ToObject<LeagueEvent>();
+                        MessageReceived?.Invoke(this, leagueEvent);
+
+                        if (!_subscribers.TryGetValue(leagueEvent.Uri, out var eventHandlers))
+                        {
+                            return;
+                        }
+
+                        Debug.WriteLine($"Right event: {leagueEvent.Uri}");
+                        eventHandlers.ForEach(eventHandler => eventHandler?.Invoke(this, leagueEvent));
+                    });
+                Debug.WriteLine("Successfully connected to websocket");
+                
             }
             catch(Exception e)
             {
@@ -115,6 +116,20 @@ namespace LeagueLoadout
             {
                 Debug.WriteLine(e.Message);
             }
+        }
+
+        public async Task<JToken> RetrieveDragonData()
+        {
+            try
+            {
+                var champions = await "https://ddragon.leagueoflegends.com/cdn/11.14.1/data/en_US/champion.json".GetStringAsync();
+                return JToken.Parse(champions)["data"];
+            } 
+            catch (Exception e)
+            {
+                Debug.WriteLine(e.Message);
+            }
+            return null;
         }
     }
 

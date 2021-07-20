@@ -13,7 +13,7 @@
     <PackageReference Include="PoniLCU" Version="1.0.2" />
     <PackageReference Include="RiotSharp" Version="4.0.0" />
     <PackageReference Include="System.Management" Version="5.0.0" />
-    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
+    <PackageReference Include="Websocket.Client" Version="4.3.32" />
   </ItemGroup>
 
 </Project>

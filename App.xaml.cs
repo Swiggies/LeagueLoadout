@@ -30,17 +30,20 @@ namespace LeagueLoadout
         private async void Application_Startup(object sender, StartupEventArgs e)
         {
             var riotConnection = _serviceProvider.GetService<RiotConnectionService>();
-            await riotConnection.RequestAuth();
+            await riotConnection.Connect();
+            
             var mainWindow = _serviceProvider.GetService<MainWindow>();
             mainWindow.Show();
 
-            GameFlowChanged += OnGameFlowChanged;
-            riotConnection.Subscribe("​/lol-perks​/v1​/currentpage", GameFlowChanged);
+            GameFlowChanged += OnPerkPageUpdate;
+            riotConnection.Subscribe("/lol-perks/v1/currentpage", GameFlowChanged);
+
+            Debug.WriteLine("Done.");
         }
 
-        private void OnGameFlowChanged(object sender, LeagueEvent e)
+        private void OnPerkPageUpdate(object sender, LeagueEvent e)
         {
-            Debug.WriteLine(e.uri);
+            Debug.WriteLine($"{e.Uri} {e.Data["name"]}");
         }
 
         private void ConfigureServices(IServiceCollection services)
