@@ -32,7 +32,8 @@ namespace LeagueLoadout
             
         private async void Button_Click(object sender, RoutedEventArgs e)
         {
-            await RiotConnection.RequestAuth();
+            //await RiotConnection.RequestAuth();
+            await RiotConnection.SendRequest();
         }
     }
 }

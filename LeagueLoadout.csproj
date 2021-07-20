@@ -7,7 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Flurl.Http" Version="3.2.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="PoniLCU" Version="1.0.2" />
     <PackageReference Include="RiotSharp" Version="4.0.0" />
     <PackageReference Include="System.Management" Version="5.0.0" />
     <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
